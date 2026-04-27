@@ -206,9 +206,26 @@ function App() {
         )}
         
         {/* Replace Overview with SOS Form natively in the sidebar for Users — Sticky for rapid re-broadcast */}
-        {role === 'user' && (
+        {/* Only show SOS form if user has no incidents OR has unresolved incidents */}
+        {role === 'user' && (!myIncidents.length || myIncidents.some(inc => inc.status !== 'resolved')) && (
           <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-panel)', paddingBottom: '1rem' }}>
             <IncidentForm onSubmit={handleReportIncident} userLocation={userLocation} />
+          </div>
+        )}
+
+        {/* Show success message when all incidents are resolved */}
+        {role === 'user' && myIncidents.length > 0 && myIncidents.every(inc => inc.status === 'resolved') && (
+          <div className="glass-panel" style={{ 
+            borderColor: '#2ea043', 
+            background: 'rgba(46, 160, 67, 0.1)',
+            textAlign: 'center',
+            padding: '2rem'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+            <h2 style={{ color: '#2ea043', marginBottom: '0.5rem' }}>All Clear!</h2>
+            <p style={{ color: '#8b949e', fontSize: '0.9rem' }}>
+              All your incidents have been resolved. Stay safe!
+            </p>
           </div>
         )}
 
