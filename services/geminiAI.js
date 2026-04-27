@@ -12,8 +12,8 @@ const getGeminiClient = () => {
     }
     try {
       genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      console.log('✅ Google Gemini AI initialized (gemini-1.5-flash)');
+      model = genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
+      console.log('✅ Google Gemini AI initialized (gemini-flash-lite-latest)');
     } catch (error) {
       console.error('❌ Failed to initialize Gemini client:', error.message);
       return null;
