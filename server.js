@@ -18,7 +18,11 @@ const io = initSocket(server);
 app.set('io', io);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: [
+    'https://disaster-ops-one.vercel.app',
+    'http://localhost:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));

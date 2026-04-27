@@ -14,7 +14,14 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const initSocket = (server) => {
   const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { 
+      origin: [
+        'https://disaster-ops-one.vercel.app',
+        'http://localhost:5173'
+      ],
+      methods: ['GET', 'POST'],
+      credentials: true
+    },
   });
 
   // Initialize global activeProviders storage
