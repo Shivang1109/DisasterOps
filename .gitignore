@@ -7,3 +7,24 @@ frontend/.env.production.local
 .DS_Store
 users.csv
 frontend/dist/
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+test-*.js
+check-*.js
+list-*.js
+
+# Firebase (not used)
+.firebaserc
+firebase.json
+firebase-debug.log
+
+# Temporary files
+*.tmp
+*.bak
+FILES_TO_DELETE.md
