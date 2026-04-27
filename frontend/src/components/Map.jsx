@@ -117,6 +117,16 @@ export default function MapComponent({ incidents, userLocation, alerts, provider
   // Zoom in closer for citizens so they can clearly see their own pin
   const zoom = isUser ? 17 : 12;
 
+  // Filter providers to only show those associated with active (non-resolved) incidents
+  const activeProviders = providers.filter(provider => {
+    // If no incidents, don't show any providers
+    if (!incidents || incidents.length === 0) return false;
+    
+    // Check if there's at least one non-resolved incident
+    const hasActiveIncidents = incidents.some(inc => inc.status !== 'resolved');
+    return hasActiveIncidents;
+  });
+
   return (
     <MapContainer
       center={userLocation ? [userLocation.lat, userLocation.lng] : [26.8467, 80.9462]}
@@ -172,8 +182,9 @@ export default function MapComponent({ incidents, userLocation, alerts, provider
       {/* ============================================================
           Live Provider Vehicle Markers - Visible to ALL roles
           Citizens can see responders coming to help them
+          Only shown when there are active (non-resolved) incidents
           ============================================================ */}
-      {providers && providers.map((provider, i) => (
+      {activeProviders && activeProviders.map((provider, i) => (
         provider.lat && provider.lng && (
           <Marker
             key={provider.id || i}
@@ -192,7 +203,7 @@ export default function MapComponent({ incidents, userLocation, alerts, provider
       ))}
 
       {/* Draw routing line from provider to selected incident */}
-      {routingTarget && providers && providers.length > 0 && providers.map((provider, i) => (
+      {routingTarget && activeProviders && activeProviders.length > 0 && activeProviders.map((provider, i) => (
         provider.lat && provider.lng && routingTarget.location && (
           <Polyline
             key={i}
