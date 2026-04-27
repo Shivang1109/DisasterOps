@@ -2,7 +2,7 @@
 
 > **Google Solutions Challenge 2026** | Powered by Google Gemini AI & Google Cloud
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=for-the-badge)](https://your-demo-url.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=for-the-badge)](https://disaster-ops-one.vercel.app)
 [![Google Gemini](https://img.shields.io/badge/Google-Gemini_AI-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
@@ -66,38 +66,35 @@ This project directly addresses:
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     CITIZEN INTERFACE                        │
-│  📱 SOS Broadcast • Voice-to-Text • Media Upload • Status   │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   BACKEND (Node.js + Express)                │
-│  🔄 Socket.IO • REST API • MongoDB • Google Gemini AI       │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-        ┌────────────┼────────────┐
-        ▼            ▼             ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│   PROVIDER   │ │    ADMIN     │ │  GEMINI AI   │
-│  INTERFACE   │ │  DASHBOARD   │ │   TRIAGE     │
-│              │ │              │ │              │
-│ • Mission    │ │ • Analytics  │ │ • Severity   │
-│   Control    │ │ • Fleet      │ │ • Actions    │
-│ • Navigation │ │   Management │ │ • Hindi      │
-│ • Chat       │ │ • Dispatch   │ │   Summary    │
-└──────────────┘ └──────────────┘ └──────────────┘
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
+│  Vercel (HTTPS) │ ◄─────► │ Render (HTTPS)   │ ◄─────► │ MongoDB Atlas   │
+│  React Frontend │         │ Node.js Backend  │         │ Database        │
+└─────────────────┘         └──────────────────┘         └─────────────────┘
+                                     │
+                                     ▼
+                            ┌──────────────────┐
+                            │ Google Gemini AI │
+                            │ Triage System    │
+                            └──────────────────┘
 ```
+
+**Live URLs:**
+- **Frontend**: https://disaster-ops-one.vercel.app
+- **Backend**: https://disasterops.onrender.com
+- **GitHub**: https://github.com/Shivang1109/DisasterOps
 
 ---
 
 ## 🚀 Technology Stack
 
 ### **Google Technologies** (Primary Focus)
-- **Google Gemini AI** (gemini-1.5-flash) - Incident triage & guidance
-- **Google Cloud Platform** - Deployment infrastructure
+- **Google Gemini AI** (gemini-flash-lite-latest) - Incident triage & guidance
 - **Google Maps API** - Geolocation & routing (planned)
+
+### **Deployment**
+- **Vercel** - Frontend hosting (HTTPS, auto-deploy)
+- **Render** - Backend hosting (HTTPS, auto-deploy)
+- **MongoDB Atlas** - Cloud database
 
 ### **Backend**
 - Node.js + Express.js
@@ -211,30 +208,31 @@ npm run dev
 
 ## 🌐 Deployment
 
-### **Backend (Render.com)**
-```bash
-# render.yaml is pre-configured
-# Just connect your GitHub repo to Render
-# Add environment variables in Render dashboard
-```
+**Live Application**: https://disaster-ops-one.vercel.app
+
+### **Backend (Render)**
+- Platform: Render.com
+- URL: https://disasterops.onrender.com
+- Auto-deploy: From GitHub main branch
+- Free tier: Sleeps after 15 min (wakes in 30 sec)
 
 ### **Frontend (Vercel)**
-```bash
-# vercel.json is pre-configured
-# Connect GitHub repo to Vercel
-# Add VITE_API_URL environment variable
-```
+- Platform: Vercel
+- URL: https://disaster-ops-one.vercel.app
+- Auto-deploy: From GitHub main branch
+- Free tier: Unlimited bandwidth
 
-**Live Demo**: [Coming Soon]
+### **Detailed Guide**
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete setup instructions.
 
 ---
 
 ## 🎯 Google Solutions Challenge Criteria
 
 ### ✅ **Technology**
-- **Google Gemini AI**: Core triage engine
-- **Google Cloud**: Deployment platform
-- **Google Maps API**: Geolocation (planned)
+- **Google Gemini AI**: Core triage engine (gemini-flash-lite-latest)
+- **Real-time Architecture**: Socket.IO + WebSockets
+- **Cloud Deployment**: Vercel + Render + MongoDB Atlas
 
 ### ✅ **Impact**
 - **SDG 11 & 13**: Direct alignment
@@ -257,10 +255,10 @@ npm run dev
 
 - [ ] **Google Cloud Vision**: Analyze incident photos/videos
 - [ ] **Google Maps Platform**: Advanced routing & heatmaps
-- [ ] **Google Cloud Functions**: Serverless scaling
-- [ ] **Firebase**: Real-time database migration
-- [ ] **Google Translate API**: Multi-language support
+- [ ] **Google Translate API**: Multi-language support beyond Hindi
 - [ ] **Predictive Analytics**: Disaster forecasting with Gemini
+- [ ] **Mobile Apps**: Native iOS/Android applications
+- [ ] **Voice Commands**: Hands-free SOS reporting
 
 ---
 
@@ -280,7 +278,9 @@ MIT License - See [LICENSE](LICENSE) for details
 ## 🙏 Acknowledgments
 
 - **Google Gemini AI** for intelligent triage capabilities
-- **Google Cloud Platform** for deployment infrastructure
+- **Vercel** for seamless frontend hosting
+- **Render** for reliable backend infrastructure
+- **MongoDB Atlas** for cloud database services
 - **NDRF & SDRF** for inspiring the emergency response model
 - **Open Source Community** for amazing tools and libraries
 
