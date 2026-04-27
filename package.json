@@ -14,7 +14,7 @@
     "google-cloud",
     "firebase"
   ],
-  "author": "Your Name",
+  "author": "Shivang Pathak",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
