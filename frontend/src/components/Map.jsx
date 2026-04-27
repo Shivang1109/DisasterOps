@@ -119,12 +119,15 @@ export default function MapComponent({ incidents, userLocation, alerts, provider
 
   // Filter providers to only show those associated with active (non-resolved) incidents
   const activeProviders = providers.filter(provider => {
-    // If no incidents, don't show any providers
-    if (!incidents || incidents.length === 0) return false;
+    // For citizens, check their own incidents
+    if (isUser) {
+      if (!myIncidents || myIncidents.length === 0) return false;
+      return myIncidents.some(inc => inc.status !== 'resolved');
+    }
     
-    // Check if there's at least one non-resolved incident
-    const hasActiveIncidents = incidents.some(inc => inc.status !== 'resolved');
-    return hasActiveIncidents;
+    // For admin/provider, check all incidents
+    if (!incidents || incidents.length === 0) return false;
+    return incidents.some(inc => inc.status !== 'resolved');
   });
 
   return (
