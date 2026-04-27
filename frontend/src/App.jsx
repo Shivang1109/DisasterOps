@@ -1,0 +1,295 @@
+import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import axios from 'axios';
+import MapComponent from './components/Map';
+import IncidentForm from './components/IncidentForm';
+import Dashboard from './components/Dashboard';
+import RoleSelection from './components/RoleSelection';
+import AdminInterface from './components/AdminInterface';
+import ProviderInterface from './components/ProviderInterface';
+import Login from './components/Login';
+import ChatWidget from './components/ChatWidget';
+import IncidentStatusTracker from './components/IncidentStatusTracker';
+import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { API_URL, SOCKET_URL } from './config';
+import './index.css';
+
+function App() {
+  const [role, setRole] = useState(null);
+  const [providerType, setProviderType] = useState(null);
+  const [user, setUser] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  
+  const [incidents, setIncidents] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [activeProviders, setActiveProviders] = useState([]);
+  const [myIncidents, setMyIncidents] = useState([]); // User's own SOS submissions
+  const [messages, setMessages] = useState([]); // Real-time chat messages
+  
+  const [userLocation, setUserLocation] = useState(null);
+  const [socket, setSocket] = useState(null);
+
+  // Initialize Socket once
+  useEffect(() => {
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
+
+    newSocket.on('new_incident', (incident) => {
+      setIncidents((prev) => [incident, ...prev]);
+    });
+
+    newSocket.on('red_alert', (incident) => {
+      const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+      audio.play().catch(e => console.log('Audio autoplay blocked'));
+      setAlerts((prev) => [incident, ...prev]);
+    });
+
+    newSocket.on('incident_updated', (updatedIncident) => {
+      setIncidents((prev) => prev.map(inc => inc._id === updatedIncident._id ? updatedIncident : inc));
+      setAlerts((prev) => prev.map(inc => inc._id === updatedIncident._id ? updatedIncident : inc));
+      setMyIncidents((prev) => prev.map(inc => inc._id === updatedIncident._id ? updatedIncident : inc));
+    });
+
+    newSocket.on('providers_update', (providersList) => {
+      setActiveProviders(providersList);
+    });
+
+    newSocket.on('chat_message', (msg) => {
+      setMessages((prev) => {
+        // Only add if global message or matches an incident the user cares about
+        const alreadyExists = prev.some(m => m.timestamp === msg.timestamp && m.sender === msg.sender);
+        if (alreadyExists) return prev;
+        return [...prev, msg];
+      });
+      if (msg.role !== role) {
+         // Optionally play a sound for new message if not from current user
+         const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+         audio.play().catch(e => console.log('Audio autoplay blocked'));
+      }
+    });
+
+    return () => newSocket.disconnect();
+  }, []);
+
+  // Sync Role and Room whenever Role or Socket changes
+  useEffect(() => {
+    if (socket && role) {
+      console.log(`Syncing role: ${role}, type: ${providerType}`);
+      socket.emit('join_service', { role, providerType });
+      // If we have location, sync that too
+      if (userLocation) {
+        socket.emit('update_location', { ...userLocation, role, providerType });
+      }
+    }
+  }, [socket, role, providerType, userLocation]);
+
+  // Fetch initial incidents and location
+  useEffect(() => {
+    axios.get(API_URL).then(res => setIncidents(res.data)).catch(console.error);
+
+    if (navigator.geolocation) {
+       const watchId = navigator.geolocation.watchPosition(
+         (pos) => {
+           console.log("Location Update:", pos.coords);
+           const newLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+           setUserLocation(newLocation);
+           
+           // Broadcast provider location updates more frequently
+           if (socket && role === 'provider') {
+             socket.emit('update_location', {
+               lat: pos.coords.latitude,
+               lng: pos.coords.longitude,
+               role,
+               providerType
+             });
+           }
+         },
+         () => {
+           if (!userLocation) setUserLocation({ lat: 26.8467, lng: 80.9462 });
+         },
+         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+       );
+       return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [socket, role, providerType]);
+
+  const handleReportIncident = async (formData) => {
+    try {
+      const payload = { ...formData, contactNumber: userPhone };
+      const res = await axios.post(API_URL, payload);
+      // Track this as the user's own SOS so they can see their circle
+      setMyIncidents((prev) => [res.data, ...prev]);
+    } catch (err) {
+      console.error('Error reporting incident:', err);
+      alert('Failed to report incident.');
+    }
+  };
+
+  const handleSendMessage = (text, targetId = null) => {
+    if (!socket || !text.trim()) return;
+    const msgData = {
+      text,
+      sender: user || 'Anonymous',
+      role: role,
+      incidentId: targetId,
+      timestamp: new Date()
+    };
+    socket.emit('send_chat_message', msgData);
+    setMessages((prev) => [...prev, msgData]);
+  };
+
+  const handleRoleSelect = (r, pType = null) => {
+    setRole(r);
+    setProviderType(pType);
+  };
+
+  const handleLogin = (username, phone, r) => {
+    setUser(username);
+    setUserPhone(phone);
+    setRole(r);
+  };
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (role === 'provider' && !providerType) {
+    return (
+      <RoleSelection 
+        onSelectRole={handleRoleSelect} 
+      />
+    );
+  }
+
+  // Intercept Admin Panel Route completely rendering distinct dual-screen UI
+  if (role === 'admin') {
+    return (
+       <AdminInterface 
+         incidents={incidents} 
+         activeProviders={activeProviders} 
+         userLocation={userLocation} 
+       />
+    );
+  }
+
+  // Intercept Provider Panel Route
+  if (role === 'provider') {
+    return (
+       <ProviderInterface 
+         incidents={incidents} 
+         userLocation={userLocation} 
+         alerts={alerts}
+         providerType={providerType}
+         onSendMessage={handleSendMessage}
+         messages={messages}
+       />
+    );
+  }
+
+  return (
+    <div className="app-container">
+      {/* Sidebar UI */}
+      <div className="sidebar" style={{ width: role === 'user' ? '400px' : '450px' }}>
+        <h1>
+          <ShieldAlert color="#f85149" size={28} />
+          DisasterOps
+        </h1>
+        <p className="subtitle">
+          {role === 'admin' ? "Admin Control Center" : 
+           role === 'provider' ? `Service Provider: ${providerType.replace('_', ' ').toUpperCase()}` : 
+           "Real-time Coordination System"}
+        </p>
+
+        {/* Global Dashboard for Admins/Providers */}
+        {role !== 'user' && (
+           <Dashboard incidents={incidents} alerts={alerts} role={role} activeProviders={activeProviders} />
+        )}
+        
+        {/* Replace Overview with SOS Form natively in the sidebar for Users — Sticky for rapid re-broadcast */}
+        {role === 'user' && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-panel)', paddingBottom: '1rem' }}>
+            <IncidentForm onSubmit={handleReportIncident} userLocation={userLocation} />
+          </div>
+        )}
+
+        {/* Dynamic Alert Feed */}
+        {alerts.length > 0 && (
+          <div className="glass-panel" style={{ 
+            borderColor: 'var(--danger-color)', 
+            maxHeight: role === 'user' ? 'min(400px, 40vh)' : 'none', 
+            overflowY: 'auto',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{ 
+              fontSize: '0.85rem', 
+              position: 'sticky', 
+              top: 0, 
+              zIndex: 5,
+              background: 'rgba(248, 81, 73, 0.95)', 
+              color: '#fff',
+              padding: '0.75rem 1rem', 
+              margin: 0,
+              boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+            }}>
+              {role === 'user' ? 'ACTIVE RED ALERTS FEED' : 'SOS SIGNAL FEED'}
+            </h2>
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {alerts.map((alert, i) => (
+                <div key={i} className="alert-banner" style={{ margin: 0 }}>
+                  <AlertCircle size={20} />
+                  <div>
+                    <h3 style={{ fontSize: '0.8rem' }}>{alert.type.toUpperCase()} DANGER</h3>
+                    <p className="alert-desc" style={{ fontSize: '0.75rem' }}>{alert.description}</p>
+                    <div className="alert-meta">
+                      <span>Severity: {alert.severity}</span>
+                      <span>Just Now</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Map View */}
+      <div className="map-container">
+        {userLocation && (
+          <MapComponent 
+            incidents={incidents} 
+            userLocation={userLocation} 
+            alerts={alerts}
+            providers={activeProviders}
+            role={role}
+            myIncidents={myIncidents}
+          />
+        )}
+      </div>
+
+      {/* Floating Chat for Users */}
+      {role === 'user' && messages.length > 0 && (
+         <ChatWidget 
+           messages={messages} 
+           onSend={(txt) => {
+             const incidentId = messages.find(m => m.incidentId)?.incidentId;
+             handleSendMessage(txt, incidentId);
+           }} 
+           user={user}
+         />
+      )}
+
+      {/* Incident Status Tracker for Citizens */}
+      {role === 'user' && (
+        <IncidentStatusTracker 
+          myIncidents={myIncidents} 
+          activeProviders={activeProviders}
+        />
+      )}
+
+    </div>
+  );
+}
+
+export default App;
